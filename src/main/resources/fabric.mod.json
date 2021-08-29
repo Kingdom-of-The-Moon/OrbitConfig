@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "orbitconfig",
+  "version": "${version}",
+
+  "name": "OrbitConfig",
+  "description": "Config library for Kingdom of the Moon's mods",
+  "authors": [
+    "omoflop",
+    "Francy-chan"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/orbitconfig/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "org.moon.orbitconfig.OrbitConfigMod"
+    ],
+    "modmenu": [ "org.moon.orbitconfig.othermods.OrbitConfigModMenu" ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "minecraft": "1.17.x",
+    "java": ">=16"
+  },
+  "custom": {
+    "modmenu": {
+      "badges": [ "library" ]
+    }
+  }
+}
