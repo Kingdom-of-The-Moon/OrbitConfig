@@ -24,7 +24,6 @@ public abstract class ConfigScreen extends Screen {
         super(config.makeText("configTitle"));
         this.parentScreen = parentScreen;
         this.config = config;
-        ConfigManager.backup(config);
     }
 
     @Override

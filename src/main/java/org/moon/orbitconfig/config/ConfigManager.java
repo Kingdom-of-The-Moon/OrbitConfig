@@ -16,7 +16,6 @@ import java.util.HashMap;
 public class ConfigManager {
 
     private static final HashMap<Object, Type> CONFIG_CLASSES = new HashMap<>();
-    private static final HashMap<Object, JsonElement> CONFIG_BACKUPS = new HashMap<>();
 
     /**
      * Registers your config object and type for your mod
@@ -67,11 +66,6 @@ public class ConfigManager {
             OrbitConfigMod.LOGGER.error(e.getMessage());
         }
         return configObject;
-    }
-
-    public static <T>void backup(T configObject) {
-        Gson gson = new Gson();
-        CONFIG_BACKUPS.put(configObject, gson.toJsonTree(configObject));
     }
 
     /**
