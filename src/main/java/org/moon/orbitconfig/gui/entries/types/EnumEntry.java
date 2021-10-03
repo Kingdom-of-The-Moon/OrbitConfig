@@ -1,4 +1,4 @@
-package org.moon.orbitconfig.gui.entries;
+package org.moon.orbitconfig.gui.entries.types;
 
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Element;
@@ -8,48 +8,59 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
-import org.moon.orbitconfig.OrbitConfigMod;
 import org.moon.orbitconfig.config.ConfigEntry;
 import org.moon.orbitconfig.config.ConfigObject;
 import org.moon.orbitconfig.gui.ConfigScreen;
+import org.moon.orbitconfig.gui.entries.Entry;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
-public class BooleanEntry extends Entry {
+public class EnumEntry extends Entry {
     //entry
     private final ConfigEntry entry;
 
     //values
-    private final Text display;
     private final Text tooltip;
-    private final boolean initValue;
+    private final Enum initValue;
 
-    private final Text textEnabled;
-    private final Text textDisabled;
+    private final HashMap<Object, Text> enumTexts;
+    private final Enum[] constants;
+    private int ordinal;
 
     //buttons
     private final ButtonWidget toggle;
     private final ButtonWidget reset;
 
-    public BooleanEntry(ConfigScreen parent, Text display, Text tooltip, Field configField, ConfigObject config) throws IllegalAccessException {
-        super(parent);
-        this.display = display;
+    public EnumEntry(ConfigScreen parent, ConfigObject config, Text display, Text tooltip, Field configField) throws IllegalAccessException {
+        super(parent, config, display, tooltip);
         this.tooltip = tooltip;
         this.entry = config.getEntry(configField);
-        this.initValue = configField.getBoolean(config.object);
+        this.initValue = entry.getEnum();
+        this.constants = entry.getEnum().getClass().getEnumConstants();
 
         //toggle button
         this.toggle = new ButtonWidget(0, 0, 75, 20, this.display, (button) -> {
-            entry.setBoolean(!entry.getBoolean());
+            ordinal = (ordinal + 1) % constants.length;
+            entry.setEnum(constants[ordinal]);
         });
-        this.textEnabled  = config.makeText(String.format("config.%s.disabled", entry.getName()));
-        this.textDisabled = config.makeText(String.format("config.%s.enabled", entry.getName()));
+
+        enumTexts = new HashMap<>() {{
+            int i = 0;
+            for(Enum e : constants) {
+               if (entry.getEnum() == e) {
+                   ordinal = i;
+               }
+                put(e, config.makeText(String.format("%s.%s", entry.getName(), e.toString().toLowerCase())));
+                i++;
+            }
+        }};
 
         //reset button
         this.reset = new ButtonWidget(0, 0, 50, 20, new TranslatableText("controls.reset"), (button) -> {
-            entry.set(entry.getDefaultValue());
+            entry.restoreDefaultValue();
         });
     }
 
@@ -62,16 +73,16 @@ public class BooleanEntry extends Entry {
         //reset button
         this.reset.x = x + 250;
         this.reset.y = y;
-        this.reset.active = entry.get() != entry.getDefaultValue();
+        this.reset.active = !entry.isDefaultValue();
         this.reset.render(matrices, mouseX, mouseY, tickDelta);
 
         //toggle button
         this.toggle.x = x + 165;
         this.toggle.y = y;
-        this.toggle.setMessage(!entry.getBoolean() ? textEnabled : textDisabled);
+        this.toggle.setMessage(enumTexts.get(entry.getEnum()));
 
         //if setting is changed
-        if (entry.getBoolean() != this.initValue)
+        if (entry.getEnum() != this.initValue)
             this.toggle.setMessage(this.toggle.getMessage().shallowCopy().formatted(Formatting.AQUA));
 
         this.toggle.render(matrices, mouseX, mouseY, tickDelta);
@@ -83,6 +94,8 @@ public class BooleanEntry extends Entry {
             parent.renderTooltip(matrices, this.tooltip, mouseX, mouseY);
             matrices.pop();
         }
+
+        super.render(matrices, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, tickDelta);
     }
 
     @Override

@@ -6,7 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.moon.orbitconfig.config.ConfigManager;
 import org.moon.orbitconfig.test.TestConfig;
-import org.moon.orbitconfig.test.TestConfigScreen;
 
 public class OrbitConfigMod implements ModInitializer {
 
@@ -14,11 +13,11 @@ public class OrbitConfigMod implements ModInitializer {
 
 	public static boolean modmenu = false;
 
-	public static TestConfig CONFIG;
+	public static TestConfig CONFIG = new TestConfig();
 
 	@Override
 	public void onInitialize() {
-		CONFIG = ConfigManager.register(new TestConfig(),TestConfig.class);
+		CONFIG = ConfigManager.register(CONFIG);
 
 		System.out.println(CONFIG.hello);
 

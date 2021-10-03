@@ -1,0 +1,28 @@
+{
+  "test.gui.config.configTitle": "Test Config",
+
+  "test.gui.config.category.greetings": "Greetings!",
+  "test.gui.config.hello": "Hello",
+  "test.gui.config.hello.enabled": "Hi",
+  "test.gui.config.hello.disabled": "Bye",
+
+  "test.gui.config.category.youre_mom": "You're mom",
+  "test.gui.config.owned": "Owned?",
+  "test.gui.config.owned.enabled": "True",
+  "test.gui.config.owned.disabled": "False",
+  "test.gui.config.hi": "Hi",
+  "test.gui.config.hi.enabled": "Yes",
+  "test.gui.config.hi.disabled": "No",
+
+  "test.gui.config.category.types": "Types of config thingies!",
+  "test.gui.config.name": "Your name",
+  "test.gui.config.name.tooltip": "There's even tooltips!!!!!",
+  "test.gui.config.anEnum": "Some enum",
+  "test.gui.config.anEnum.option_a": "Option A",
+  "test.gui.config.anEnum.option_b": "Option B",
+  "test.gui.config.anEnum.yes": "yes",
+  "test.gui.config.anEnum.yesnt": "yesnt",
+  "test.gui.config.anEnum.hi_fran": "hi fran",
+
+  "": ""
+}

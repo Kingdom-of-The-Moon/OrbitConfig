@@ -7,13 +7,11 @@ import java.lang.reflect.Field;
 public class ConfigEntry {
 
     protected final Object target;
-    protected final Object defaultValue;
     protected final Field field;
 
     public ConfigEntry(Object target, Field field) {
         this.target = target;
         this.field = field;
-        this.defaultValue = get();
     }
 
     public boolean getBoolean() {
@@ -64,6 +62,13 @@ public class ConfigEntry {
         }
     }
 
+    public Enum<?> getEnum() {
+        return (Enum<?>) get();
+    }
+    public void setEnum(Enum<?> value) {
+        set(value);
+    }
+
     public Object get() {
         try {
             return field.get(target);
@@ -81,7 +86,15 @@ public class ConfigEntry {
     }
 
     public Object getDefaultValue() {
-        return defaultValue;
+        return ConfigManager.getDefaultValue(target, getName());
+    }
+
+    public void restoreDefaultValue() {
+        set(getDefaultValue());
+    }
+
+    public boolean isDefaultValue () {
+        return get().equals(getDefaultValue());
     }
 
     public String getString() {

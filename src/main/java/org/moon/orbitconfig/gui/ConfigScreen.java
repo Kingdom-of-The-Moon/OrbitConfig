@@ -10,8 +10,6 @@ import net.minecraft.text.TranslatableText;
 import org.moon.orbitconfig.config.ConfigManager;
 import org.moon.orbitconfig.config.ConfigObject;
 
-import java.util.ArrayList;
-
 public abstract class ConfigScreen extends Screen {
 
     public final Screen parentScreen;
@@ -24,6 +22,7 @@ public abstract class ConfigScreen extends Screen {
         super(config.makeText("configTitle"));
         this.parentScreen = parentScreen;
         this.config = config;
+        ConfigManager.backupValues(config, false);
     }
 
     @Override
@@ -31,7 +30,7 @@ public abstract class ConfigScreen extends Screen {
         super.init();
 
         this.addDrawableChild(new ButtonWidget(this.width / 2 - 154, this.height - 29, 150, 20, new TranslatableText("gui.cancel"), (buttonWidgetx) -> {
-            ConfigManager.restore(config);
+            ConfigManager.revertChanges(config);
             this.client.setScreen(parentScreen);
         }));
 

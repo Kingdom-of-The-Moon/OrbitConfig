@@ -14,8 +14,12 @@ public class ConfigObject {
     private final HashMap<Field, ConfigEntry> fieldToEntry;
 
     public ConfigObject(Object object) {
+        if (object == null) {
+            throw new NullPointerException("Config object is null!");
+        }
+
         this.object = object;
-        this.config = this.object.getClass().getAnnotation(OrbitConfig.class);
+        this.config = object.getClass().getAnnotation(OrbitConfig.class);
         this.fieldToEntry = new HashMap<>();
 
         Field[] fields = object.getClass().getFields();
@@ -29,6 +33,6 @@ public class ConfigObject {
     }
 
     public TranslatableText makeText(String entry) {
-        return new TranslatableText(String.format("%s.gui.%s", config.modID(), entry));
+        return new TranslatableText(String.format("%s.gui.config.%s", config.modID(), entry));
     }
 }

@@ -1,8 +1,11 @@
 package org.moon.orbitconfig.config.annotation;
 
-import net.minecraft.text.TranslatableText;
-import org.moon.orbitconfig.gui.entries.CategoryEntry;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Category {
     String value();
+
+    String tooltip() default "";
 }

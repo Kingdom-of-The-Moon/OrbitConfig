@@ -1,48 +1,51 @@
 package org.moon.orbitconfig.config;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import org.moon.orbitconfig.OrbitConfigMod;
-import org.moon.orbitconfig.config.annotation.OrbitConfig;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class ConfigManager {
 
-    private static final HashMap<Object, Type> CONFIG_CLASSES = new HashMap<>();
+    private static final HashMap<Type, HashMap<String, Object>> CONFIG_DEFAULTS = new HashMap<>();
+    private static final HashMap<Type, HashMap<String, Object>> CONFIG_TEMP = new HashMap<>();
 
     /**
      * Registers your config object and type for your mod
-     * @param clazz
      * @param <T>
      * @return
      */
-    public static <T>T register(Object config, Class<T> clazz) {
-        CONFIG_CLASSES.put(config, clazz);
+    public static <T>T register(Object config) {
+        backupValues(config, true);
         return (T) load(config);
     }
 
     /**
      * Saves the provided config object to file
-     * @param configObject
+     * @param config
      */
-    public static void save(Object configObject) {
-        ConfigObject config = getConfig(configObject);
+    public static void save(ConfigObject config) {
         try {
             Gson gson = new Gson();
-            JsonWriter writer = new JsonWriter(Files.newBufferedWriter(getPath(config)));
+            StringWriter w = new StringWriter();
+            JsonWriter writer = new JsonWriter(w);
             writer.setIndent("  ");
-            gson.toJson(gson.toJsonTree(configObject, CONFIG_CLASSES.get(configObject)), writer);
-            writer.close();
-        } catch (IOException e) {
+            gson.toJson(gson.toJsonTree(config.object, config.object.getClass()), writer);
+            Files.deleteIfExists(getPath(config));
+            var fw = Files.newBufferedWriter(getPath(config), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            fw.write(w.toString());
+            fw.close();
+        } catch (Exception e) {
             OrbitConfigMod.LOGGER.error("Failed to save config \"%s\"!".formatted(config.config.filename()));
-            OrbitConfigMod.LOGGER.error(e.getMessage());
+            OrbitConfigMod.LOGGER.error(e);
         }
     }
 
@@ -58,26 +61,69 @@ public class ConfigManager {
             Gson gson = new Gson();
             Path configPath = getPath(config);
             if (!Files.exists(configPath)) {
-                save(configObject);
+                save(config);
             }
-            return gson.fromJson(Files.newBufferedReader(configPath), CONFIG_CLASSES.get(configObject));
+            T loadedInstance = gson.fromJson(Files.newBufferedReader(configPath), (Type) config.object.getClass());
+            if (loadedInstance == null) {
+                return (T) config.object.getClass().newInstance();
+            } else {
+                return loadedInstance;
+            }
         } catch (IOException e) {
             OrbitConfigMod.LOGGER.error("Failed to load config \"%s\"!".formatted(config.config.filename()));
             OrbitConfigMod.LOGGER.error(e.getMessage());
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
         return configObject;
     }
 
     /**
-     * doesnt work yet :<
-     * @param configObject
-     * @param <T>
+     * Creates a backup of a config object, so changes can be reverted later
+     * @param config
+     * @param mode
+     */
+    public static void backupValues(Object config, boolean mode) {
+        HashMap<String, Object> defaults = new HashMap<>() {{
+            for (Field f : config.getClass().getFields()) {
+                try {
+                    put(f.getName(), f.get(config));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        }};
+        (mode ? CONFIG_DEFAULTS : CONFIG_TEMP).put(config.getClass(), defaults);
+    }
+
+
+
+    public static Object getDefaultValue(Object object, String name) {
+        return CONFIG_DEFAULTS.get(object.getClass()).get(name);
+    }
+
+    /**
+     * Reverts changes made to a config object
+     * @param config
      * @return
      */
-    public static <T>T restore(T configObject) {
-        Gson gson = new Gson();
-        return configObject;
-        //configObject = gson.fromJson(CONFIG_BACKUPS.get(configObject), CONFIG_CLASSES.get((configObject)));
+    public static void revertChanges(ConfigObject config) {
+        restore(config, CONFIG_TEMP);
+        CONFIG_TEMP.remove(config.getClass());
+    }
+
+    static void restore(ConfigObject object, HashMap<Type, HashMap<String, Object>> map) {
+        map.get(object.object.getClass()).entrySet().forEach(entry -> {
+            try {
+                object.getClass().getField(entry.getKey()).set(object.object, entry.getValue());
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
 
@@ -91,6 +137,7 @@ public class ConfigManager {
     }
 
     public static ConfigObject getConfig(Object configObject) {
+        Arrays.stream(configObject.getClass().getAnnotations()).forEach(OrbitConfigMod.LOGGER::warn);
         return new ConfigObject(configObject);
     }
 }

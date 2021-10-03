@@ -1,34 +1,28 @@
-package org.moon.orbitconfig.gui.entries;
+package org.moon.orbitconfig.gui.entries.misc;
 
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
-import org.moon.orbitconfig.gui.ConfigListWidget;
 import org.moon.orbitconfig.gui.ConfigScreen;
+import org.moon.orbitconfig.gui.entries.Entry;
 
 import java.util.Collections;
 import java.util.List;
 
 public class CategoryEntry extends Entry {
-    //properties
-    private final Text text;
-
-    public CategoryEntry(ConfigScreen parent, Text text) {
-        super(parent);
-        this.text = text;
+    public CategoryEntry(ConfigScreen parent, Text display, Text tooltip) {
+        super(parent, null, display, tooltip);
     }
 
     @Override
-    public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-        //render text
+    public void renderEntryName(MatrixStack matrices, int y, int x, int entryHeight) {
         TextRenderer textRenderer = this.client.textRenderer;
-        Text text = this.text;
-        int textWidth = this.client.textRenderer.getWidth(this.text);
+        int textWidth = this.client.textRenderer.getWidth(this.display);
         float xPos = (float)(this.client.currentScreen.width / 2 - textWidth / 2);
         int yPos = y + entryHeight;
-        textRenderer.draw(matrices, text, xPos, (float)(yPos - 9 - 1), 16777215);
+        textRenderer.draw(matrices, this.display, xPos, (float)(yPos - 9 - 1), 16777215);
     }
 
     @Override

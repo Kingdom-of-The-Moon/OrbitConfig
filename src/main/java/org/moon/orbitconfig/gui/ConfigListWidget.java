@@ -1,18 +1,19 @@
 package org.moon.orbitconfig.gui;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.text.Text;
 import org.moon.orbitconfig.config.ConfigObject;
 import org.moon.orbitconfig.config.annotation.Category;
 import org.moon.orbitconfig.config.annotation.Tooltip;
-import org.moon.orbitconfig.gui.entries.BooleanEntry;
-import org.moon.orbitconfig.gui.entries.CategoryEntry;
-import org.moon.orbitconfig.gui.entries.InputEntry;
+import org.moon.orbitconfig.gui.entries.types.BooleanEntry;
+import org.moon.orbitconfig.gui.entries.misc.CategoryEntry;
+import org.moon.orbitconfig.gui.entries.types.EnumEntry;
+import org.moon.orbitconfig.gui.entries.types.InputEntry;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 public class ConfigListWidget extends ElementListWidget {
 
@@ -30,10 +31,11 @@ public class ConfigListWidget extends ElementListWidget {
         for (Field f : fields) {
             Annotation[] fieldAnnotations = f.getAnnotations();
             boolean hasTooltip = false;
+            Category category = null;
 
             for (Annotation a : fieldAnnotations) {
-                if (a instanceof Category category) {
-                    this.addEntry(new CategoryEntry(parent, config.makeText("config.category." + category.value())));
+                if (a instanceof Category c) {
+                    category = c;
                 } else if (a instanceof Tooltip) {
                     hasTooltip = true;
                 }
@@ -41,13 +43,22 @@ public class ConfigListWidget extends ElementListWidget {
 
             try {
                 Object field      = f.get(config.object);
-                String configName = String.format("config.%s", f.getName());
-                Text name    = config.makeText(configName);
-                Text tooltip = hasTooltip ? config.makeText(String.format("%s.tooltip", configName)) : null;
+                Text name    = config.makeText(f.getName());
+                Text tooltip = hasTooltip ? config.makeText(String.format("%s.tooltip", f.getName())) : null;
 
-                // Text display, Text tooltip, Field configField, ConfigObject config
+                if (category != null) {
+                    Text categoryName = config.makeText(String.format("category.%s", category.value()));
+                    boolean categoryHasTooltip = !category.tooltip().isBlank();
+                    Text categoryTooltip = categoryHasTooltip ? config.makeText(String.format("category.%s.tooltip", category.value(), category.tooltip())) : null;
+                    this.addEntry(new CategoryEntry(parent, categoryName, categoryTooltip));
+                }
+
                 if (field instanceof Boolean) {
-                    this.addEntry(new BooleanEntry(parent, name, tooltip, f, config));
+                    this.addEntry(new BooleanEntry(parent, config, name, tooltip, f));
+                } else if (field instanceof String) {
+                    this.addEntry(new InputEntry(parent, config, name, tooltip, f, Objects::nonNull));
+                } else if (field instanceof Enum) {
+                    this.addEntry(new EnumEntry(parent, config, name, tooltip, f));
                 }
 
             } catch (IllegalAccessException e) {}

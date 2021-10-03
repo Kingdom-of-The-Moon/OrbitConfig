@@ -1,4 +1,4 @@
-package org.moon.orbitconfig.gui.entries;
+package org.moon.orbitconfig.gui.entries.types;
 
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Element;
@@ -11,42 +11,47 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import org.moon.orbitconfig.config.ConfigEntry;
+import org.moon.orbitconfig.config.ConfigObject;
 import org.moon.orbitconfig.gui.ConfigScreen;
+import org.moon.orbitconfig.gui.entries.Entry;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
 public class InputEntry extends Entry {
     //entry
-    private final ConfigEntry config;
+    private final ConfigEntry entry;
 
     //values
-    private final Text display;
-    private final Text tooltip;
     private final String initValue;
+    private final Predicate<String> validator;
 
     //buttons
     private final TextFieldWidget field;
     private final ButtonWidget reset;
 
-    public InputEntry(ConfigScreen parent, Text display, Text tooltip, ConfigEntry config, Predicate<String> validator) {
-        super(parent);
-        this.display = display;
-        this.tooltip = tooltip;
-        this.config = config;
-        this.initValue = config.getString();
+    public InputEntry(ConfigScreen parent, ConfigObject config, Text display, Text tooltip, Field configField, Predicate<String> validator) {
+        super(parent, config, display, tooltip);
+        this.entry = config.getEntry(configField);
+        this.initValue = entry.getString();
+        this.validator = validator;
 
         //field
-        this.field = new TextFieldWidget(this.client.textRenderer, 0, 0, 70, 16, new LiteralText(config.getString()));
-        this.field.setChangedListener((fieldText) -> config.set(fieldText));
-        this.field.setText(config.getString());
+        this.field = new TextFieldWidget(this.client.textRenderer, 0, 0, 70, 16, new LiteralText(entry.getString()));
+        this.field.setChangedListener((fieldText) -> {
+            if (isTextValid()) {
+                entry.set(fieldText);
+            }
+        });
+        this.field.setText(entry.getString());
         this.field.setTextPredicate(validator);
 
         //reset button
         this.reset = new ButtonWidget(0, 0, 50, 20, new TranslatableText("controls.reset"), (button) -> {
-            config.set(config.getDefaultValue());
-            this.field.setText(config.getString());
+            entry.restoreDefaultValue();
+            this.field.setText(entry.getString());
         });
     }
 
@@ -59,7 +64,7 @@ public class InputEntry extends Entry {
         //reset button
         this.reset.x = x + 250;
         this.reset.y = y;
-        this.reset.active = !this.config.get().equals(this.config.getDefaultValue());
+        this.reset.active = !entry.isDefaultValue();
         this.reset.render(matrices, mouseX, mouseY, tickDelta);
 
         //text field
@@ -67,9 +72,9 @@ public class InputEntry extends Entry {
         this.field.y = y + 2;
 
         //if setting is changed
-        if (!this.config.getString().equals(this.initValue))
+        if (!this.entry.getString().equals(this.initValue))
             try {
-                this.config.getDefaultValue().getClass().getConstructor(new Class[] {String.class}).newInstance(this.config.getString());
+                this.entry.getDefaultValue().getClass().getConstructor(new Class[] {String.class}).newInstance(this.entry.getString());
                 this.field.setEditableColor(Formatting.AQUA.getColorValue());
             } catch (Exception e) {
                 this.field.setEditableColor(Formatting.RED.getColorValue());
@@ -77,15 +82,17 @@ public class InputEntry extends Entry {
         else
             this.field.setEditableColor(Formatting.WHITE.getColorValue());
 
+        if (!isTextValid()) {
+            this.field.setEditableColor(Formatting.RED.getColorValue());
+        }
+
         this.field.render(matrices, mouseX, mouseY, tickDelta);
 
-        //overlay text
-        if (isMouseOver(mouseX, mouseY) && mouseX < x + 165) {
-            matrices.push();
-            matrices.translate(0, 0, 599);
-            parent.renderTooltip(matrices, this.tooltip, mouseX, mouseY);
-            matrices.pop();
-        }
+        super.render(matrices, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, tickDelta);
+    }
+
+    public boolean isTextValid() {
+        return this.validator.test(this.field.getText());
     }
 
     @Override
