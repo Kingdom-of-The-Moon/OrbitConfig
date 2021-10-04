@@ -1,6 +1,7 @@
 package org.moon.orbitconfig.config;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loader.api.FabricLoader;
 import org.moon.orbitconfig.OrbitConfigMod;
@@ -17,6 +18,7 @@ public class ConfigManager {
 
     private static final HashMap<Type, HashMap<String, Object>> CONFIG_DEFAULTS = new HashMap<>();
     private static final HashMap<Type, HashMap<String, Object>> CONFIG_TEMP = new HashMap<>();
+    private static final HashMap<Class<?>, Object> TYPE_ADAPTERS = new HashMap<>();
 
     /**
      * Registers your config object and type for your mod
@@ -28,13 +30,17 @@ public class ConfigManager {
         return (T) load(config);
     }
 
+    public static void registerTypeAdapter(Class<?> clazz, Object typeAdapter) {
+        TYPE_ADAPTERS.putIfAbsent(clazz, typeAdapter);
+    }
+
     /**
      * Saves the provided config object to file
      * @param config
      */
     public static void save(ConfigObject config) {
         try {
-            Gson gson = new Gson();
+            Gson gson = getGson();
             StringWriter w = new StringWriter();
             JsonWriter writer = new JsonWriter(w);
             writer.setIndent("  ");
@@ -58,24 +64,16 @@ public class ConfigManager {
     static <T>T load(T configObject) {
         ConfigObject config = getConfig(configObject);
         try {
-            Gson gson = new Gson();
             Path configPath = getPath(config);
             if (!Files.exists(configPath)) {
                 save(config);
             }
-            T loadedInstance = gson.fromJson(Files.newBufferedReader(configPath), (Type) config.object.getClass());
-            if (loadedInstance == null) {
-                return (T) config.object.getClass().newInstance();
-            } else {
-                return loadedInstance;
-            }
+
+            T loadedInstance = getGson().fromJson(Files.newBufferedReader(configPath), (Type) config.object.getClass());
+            return loadedInstance;
         } catch (IOException e) {
             OrbitConfigMod.LOGGER.error("Failed to load config \"%s\"!".formatted(config.config.filename()));
             OrbitConfigMod.LOGGER.error(e.getMessage());
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
         }
         return configObject;
     }
@@ -136,8 +134,23 @@ public class ConfigManager {
         return FabricLoader.getInstance().getConfigDir().resolve(config.config.filename()+".json");
     }
 
+    /**
+     * Alias of getPath(ConfigObject config)
+     * @param configObject
+     * @return
+     */
     public static ConfigObject getConfig(Object configObject) {
         Arrays.stream(configObject.getClass().getAnnotations()).forEach(OrbitConfigMod.LOGGER::warn);
         return new ConfigObject(configObject);
+    }
+
+    /**
+     * Builds a Gson object with custom type adapters
+     * @return
+     */
+    private static Gson getGson() {
+        GsonBuilder builder = new GsonBuilder();
+        TYPE_ADAPTERS.forEach((clazz, adapter) -> builder.registerTypeAdapter(clazz, adapter));
+        return builder.create();
     }
 }

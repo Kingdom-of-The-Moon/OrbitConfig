@@ -1,51 +1,49 @@
 package org.moon.orbitconfig.gui.entries.types;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
-import org.moon.orbitconfig.config.ConfigEntry;
 import org.moon.orbitconfig.config.ConfigObject;
 import org.moon.orbitconfig.gui.ConfigScreen;
-import org.moon.orbitconfig.gui.entries.Entry;
+import org.moon.orbitconfig.gui.entries.TypedEntry;
+import org.moon.orbitconfig.gui.widgets.RightClickableButtonWidget;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-public class EnumEntry extends Entry {
-    //entry
-    private final ConfigEntry entry;
-
-    //values
-    private final Text tooltip;
-    private final Enum initValue;
+@Environment(EnvType.CLIENT)
+public class EnumEntry extends TypedEntry<Enum> {
 
     private final HashMap<Object, Text> enumTexts;
     private final Enum[] constants;
     private int ordinal;
 
-    //buttons
     private final ButtonWidget toggle;
-    private final ButtonWidget reset;
 
-    public EnumEntry(ConfigScreen parent, ConfigObject config, Text display, Text tooltip, Field configField) throws IllegalAccessException {
-        super(parent, config, display, tooltip);
-        this.tooltip = tooltip;
-        this.entry = config.getEntry(configField);
-        this.initValue = entry.getEnum();
+    public EnumEntry(ConfigScreen parent, ConfigObject config, Text display, Text tooltip, Field configField) {
+        super(parent, config, configField, display, tooltip);
         this.constants = entry.getEnum().getClass().getEnumConstants();
 
         //toggle button
-        this.toggle = new ButtonWidget(0, 0, 75, 20, this.display, (button) -> {
+        this.toggle = new RightClickableButtonWidget(0, 0, 75, 20, this.display, (button) -> {
             ordinal = (ordinal + 1) % constants.length;
             entry.setEnum(constants[ordinal]);
+        }, (button) -> {
+            ordinal -= 1;
+            if (ordinal < 0) {
+                ordinal = constants.length-1;
+            }
+            entry.setEnum(constants[ordinal]);
         });
+        this.toggle.onPress();
 
         enumTexts = new HashMap<>() {{
             int i = 0;
@@ -57,11 +55,6 @@ public class EnumEntry extends Entry {
                 i++;
             }
         }};
-
-        //reset button
-        this.reset = new ButtonWidget(0, 0, 50, 20, new TranslatableText("controls.reset"), (button) -> {
-            entry.restoreDefaultValue();
-        });
     }
 
     public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
@@ -82,18 +75,10 @@ public class EnumEntry extends Entry {
         this.toggle.setMessage(enumTexts.get(entry.getEnum()));
 
         //if setting is changed
-        if (entry.getEnum() != this.initValue)
+        if (entry.getEnum() != this.initialValue)
             this.toggle.setMessage(this.toggle.getMessage().shallowCopy().formatted(Formatting.AQUA));
 
         this.toggle.render(matrices, mouseX, mouseY, tickDelta);
-
-        //overlay text
-        if (isMouseOver(mouseX, mouseY) && mouseX < x + 165 && this.tooltip != null) {
-            matrices.push();
-            matrices.translate(0, 0, 599);
-            parent.renderTooltip(matrices, this.tooltip, mouseX, mouseY);
-            matrices.pop();
-        }
 
         super.render(matrices, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, tickDelta);
     }

@@ -1,5 +1,7 @@
 package org.moon.orbitconfig.gui.entries.misc;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -11,9 +13,10 @@ import org.moon.orbitconfig.gui.entries.Entry;
 import java.util.Collections;
 import java.util.List;
 
+@Environment(EnvType.CLIENT)
 public class CategoryEntry extends Entry {
     public CategoryEntry(ConfigScreen parent, Text display, Text tooltip) {
-        super(parent, null, display, tooltip);
+        super(parent, display, tooltip);
     }
 
     @Override

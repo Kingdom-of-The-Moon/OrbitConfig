@@ -1,24 +1,24 @@
 package org.moon.orbitconfig.gui.entries;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.widget.ElementListWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
-import org.moon.orbitconfig.config.ConfigObject;
 import org.moon.orbitconfig.gui.ConfigScreen;
 
+@Environment(EnvType.CLIENT)
 public abstract class Entry extends ElementListWidget.Entry<Entry> {
     protected final MinecraftClient client;
     protected final ConfigScreen parent;
-    protected final ConfigObject config;
     protected final Text tooltip;
     protected final Text display;
 
-    public Entry(ConfigScreen parent, ConfigObject config, Text display, Text tooltip) {
+    public Entry(ConfigScreen parent, Text display, Text tooltip) {
         this.parent = parent;
         this.client = parent.getClient();
-        this.config = config;
         this.tooltip = tooltip;
         this.display = display;
     }
@@ -36,11 +36,16 @@ public abstract class Entry extends ElementListWidget.Entry<Entry> {
     }
 
     public void renderEntryTooltip(MatrixStack matrices, int x, int mouseX, int mouseY) {
-        if (isMouseOver(mouseX, mouseY) && mouseX < x + 165 && this.tooltip != null) {
+        if (isMouseOverEntryName(x, mouseX, mouseY) && this.tooltip != null) {
             matrices.push();
             matrices.translate(0, 0, 599);
             parent.renderTooltip(matrices, this.tooltip, mouseX, mouseY);
             matrices.pop();
         }
+    }
+
+    protected boolean isMouseOverEntryName(int x, int mouseX, int mouseY) {
+        TextRenderer textRenderer = this.client.textRenderer;
+        return isMouseOver(mouseX, mouseY) && mouseX < x + textRenderer.getWidth(this.display.getString());
     }
 }

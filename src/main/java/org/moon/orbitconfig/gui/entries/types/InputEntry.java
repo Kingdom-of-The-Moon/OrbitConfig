@@ -1,5 +1,7 @@
 package org.moon.orbitconfig.gui.entries.types;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -8,51 +10,49 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
-import org.moon.orbitconfig.config.ConfigEntry;
 import org.moon.orbitconfig.config.ConfigObject;
 import org.moon.orbitconfig.gui.ConfigScreen;
-import org.moon.orbitconfig.gui.entries.Entry;
+import org.moon.orbitconfig.gui.entries.TypedEntry;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class InputEntry extends Entry {
-    //entry
-    private final ConfigEntry entry;
+@Environment(EnvType.CLIENT)
+public class InputEntry extends TypedEntry<String> {
 
     //values
-    private final String initValue;
-    private final Predicate<String> validator;
+    public Predicate<String> validator;
 
     //buttons
-    private final TextFieldWidget field;
-    private final ButtonWidget reset;
+    protected final TextFieldWidget field;
+
+    private int extraWidth = 0;
 
     public InputEntry(ConfigScreen parent, ConfigObject config, Text display, Text tooltip, Field configField, Predicate<String> validator) {
-        super(parent, config, display, tooltip);
-        this.entry = config.getEntry(configField);
-        this.initValue = entry.getString();
+        super(parent, config, configField, display, tooltip);
         this.validator = validator;
 
         //field
         this.field = new TextFieldWidget(this.client.textRenderer, 0, 0, 70, 16, new LiteralText(entry.getString()));
-        this.field.setChangedListener((fieldText) -> {
-            if (isTextValid()) {
-                entry.set(fieldText);
-            }
-        });
+        this.field.setChangedListener(this::onFieldChanged);
+        this.field.setMaxLength(9999);
         this.field.setText(entry.getString());
         this.field.setTextPredicate(validator);
+    }
 
-        //reset button
-        this.reset = new ButtonWidget(0, 0, 50, 20, new TranslatableText("controls.reset"), (button) -> {
-            entry.restoreDefaultValue();
-            this.field.setText(entry.getString());
-        });
+    protected void onFieldChanged(String fieldText) {
+        if (isTextValid()) {
+            entry.set(fieldText);
+        }
+    }
+
+    @Override
+    protected void onReset(ButtonWidget button) {
+        super.onReset(button);
+        field.setText(entry.getString());
     }
 
     public void render(MatrixStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
@@ -61,18 +61,8 @@ public class InputEntry extends Entry {
         int posY = y + entryHeight / 2;
         textRenderer.draw(matrices, this.display, (float) x, (float)(posY - 9 / 2), 16777215);
 
-        //reset button
-        this.reset.x = x + 250;
-        this.reset.y = y;
-        this.reset.active = !entry.isDefaultValue();
-        this.reset.render(matrices, mouseX, mouseY, tickDelta);
-
-        //text field
-        this.field.x = x + 167;
-        this.field.y = y + 2;
-
         //if setting is changed
-        if (!this.entry.getString().equals(this.initValue))
+        if (!this.entry.getString().equals(this.initialValue))
             try {
                 this.entry.getDefaultValue().getClass().getConstructor(new Class[] {String.class}).newInstance(this.entry.getString());
                 this.field.setEditableColor(Formatting.AQUA.getColorValue());
@@ -86,9 +76,27 @@ public class InputEntry extends Entry {
             this.field.setEditableColor(Formatting.RED.getColorValue());
         }
 
+        renderEntryName(matrices, y, x, entryHeight);
+        renderReset(matrices, x, y, mouseX, mouseY, tickDelta);
+
+        //text field
+        if (this.field.isFocused() &&!this.field.getText().isBlank())
+            extraWidth = Math.max(0, this.client.textRenderer.getWidth(this.field.getText()) - 70);
+        else
+            extraWidth = 0;
+
+        this.field.setWidth(70 + extraWidth);
+        this.field.x = x + 167 - extraWidth;
+        this.field.y = y + 2;
         this.field.render(matrices, mouseX, mouseY, tickDelta);
 
-        super.render(matrices, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, tickDelta);
+        renderEntryTooltip(matrices, x, mouseX, mouseY);
+    }
+
+    @Override
+    protected boolean isMouseOverEntryName(int x, int mouseX, int mouseY) {
+        TextRenderer textRenderer = this.client.textRenderer;
+        return isMouseOver(mouseX, mouseY) && mouseX < x + textRenderer.getWidth(this.display.getString()) - extraWidth;
     }
 
     public boolean isTextValid() {

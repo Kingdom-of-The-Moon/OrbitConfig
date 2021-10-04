@@ -69,9 +69,9 @@ public class ConfigEntry {
         set(value);
     }
 
-    public Object get() {
+    public <T>T get() {
         try {
-            return field.get(target);
+            return (T) field.get(target);
         } catch (IllegalAccessException e) {
             error(e);
         }

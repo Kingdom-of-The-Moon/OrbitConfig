@@ -1,5 +1,7 @@
 package org.moon.orbitconfig.gui;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -10,6 +12,7 @@ import net.minecraft.text.TranslatableText;
 import org.moon.orbitconfig.config.ConfigManager;
 import org.moon.orbitconfig.config.ConfigObject;
 
+@Environment(EnvType.CLIENT)
 public abstract class ConfigScreen extends Screen {
 
     public final Screen parentScreen;
