@@ -140,7 +140,6 @@ public class ConfigManager {
      * @return
      */
     public static ConfigObject getConfig(Object configObject) {
-        Arrays.stream(configObject.getClass().getAnnotations()).forEach(OrbitConfigMod.LOGGER::warn);
         return new ConfigObject(configObject);
     }
 
@@ -150,7 +149,7 @@ public class ConfigManager {
      */
     private static Gson getGson() {
         GsonBuilder builder = new GsonBuilder();
-        TYPE_ADAPTERS.forEach((clazz, adapter) -> builder.registerTypeAdapter(clazz, adapter));
+        TYPE_ADAPTERS.forEach(builder::registerTypeAdapter);
         return builder.create();
     }
 }

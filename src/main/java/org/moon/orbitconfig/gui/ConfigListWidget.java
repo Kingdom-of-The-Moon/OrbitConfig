@@ -101,11 +101,13 @@ public class ConfigListWidget extends ElementListWidget {
                 for(Map.Entry<Predicate<Object>, TypedEntryFactory> factory : TYPED_FACTORIES.entrySet()) {
                     if (factory.getKey().test(field)) {
                         Entry<?> configEntry = factory.getValue().create(parent, config, name, tooltip, f);
-                        if (regex != null && configEntry instanceof InputEntry inputEntry) {
-                            final String jank = regex;
-                            inputEntry.validator = (s) -> s.matches(jank);
-                        } else {
-                            OrbitConfigMod.LOGGER.error("Regex cannot be applied to type: \"%s\"".formatted(configEntry.getClass().getName()));
+                        if (regex != null) {
+                            if (configEntry instanceof InputEntry inputEntry) {
+                                final String jank = regex;
+                                inputEntry.validator = (s) -> s.matches(jank);
+                            } else {
+                                OrbitConfigMod.LOGGER.error("Regex cannot be applied to type: \"%s\"".formatted(configEntry.getClass().getName()));
+                            }
                         }
                         this.addEntry(configEntry);
                         found = true;

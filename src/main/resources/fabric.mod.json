@@ -21,8 +21,7 @@
   "entrypoints": {
     "main": [
       "org.moon.orbitconfig.OrbitConfigMod"
-    ],
-    "modmenu": [ "org.moon.orbitconfig.othermods.OrbitConfigModMenu" ]
+    ]
   },
   "mixins": [],
   "depends": {
